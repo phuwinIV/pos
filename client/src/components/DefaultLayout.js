@@ -8,8 +8,6 @@ import {
    CopyOutlined,
    UnorderedListOutlined,
    LoginOutlined,
-   ShoppingCartOutlined,
-
 } from '@ant-design/icons';
 import '../resourses/layout.css';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -26,6 +24,9 @@ const DefaultLayout = (props) => {
 
    const cart = useSelector((state) => state.cart);
    const { cartItems } = cart;
+
+   const userLogin = useSelector((state) => state.userLogin);
+   const { posUser } = userLogin;
 
    const dispatch = useDispatch();
 
@@ -81,12 +82,8 @@ const DefaultLayout = (props) => {
                      onClick: toggle,
                   }
                )}
-               <div
-                  className='cart-count d-flex align-items-center'
-                  onClick={() => navigate('/cart')}>
-                  <p className='mt-3 mr-2'>{cartItems.length}</p>
-                  <ShoppingCartOutlined />
-               </div>
+
+               <h4 className='mx-5 my-1'> {posUser.name} </h4>
             </Header>
             <div className='d-flex'>
                {' '}

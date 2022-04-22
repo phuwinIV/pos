@@ -1,4 +1,4 @@
-import axios from 'axios';
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import DefaultLayout from '../components/DefaultLayout';
@@ -11,24 +11,22 @@ import {
    register,
    updateUser,
 } from '../actions/userActions';
+import { Space } from 'antd';
 
 const Employee = () => {
-   const componentRef = useRef();
-   const [usersData, setUsersData] = useState([]);
    const [modalOpen, setModalOpen] = useState(false);
    const [editUser, setEditUser] = useState(null);
 
    const dispatch = useDispatch();
 
-   // const userRegister = useSelector((state) => state.userRegister);
-   // const { loading, error } = userRegister;
-
    const userLogin = useSelector((state) => state.userLogin);
    const { posUser } = userLogin;
-   console.log(posUser);
 
    const userList = useSelector((state) => state.userList);
-   const { loading, error, users } = userList;
+   const { loading, users } = userList;
+
+   const userRegister = useSelector((state) => state.userRegister);
+   const { success: successRegister, error: errorRegister } = userRegister;
 
    const userDelete = useSelector((state) => state.userDelete);
    const { success: successDelete } = userDelete;
@@ -39,19 +37,6 @@ const Employee = () => {
       error: errorUpdate,
       success: successUpdate,
    } = userUpdate;
-
-   const getAllusers = async () => {
-      dispatch({ type: 'SHOW_LOADING' });
-      try {
-         const res = await axios.get('/api/users');
-
-         setUsersData(res.data);
-         dispatch({ type: 'HIDE_LOADING' });
-      } catch (error) {
-         dispatch({ type: 'SHOW_LOADING' });
-         console.log(error);
-      }
-   };
 
    const deleteHandler = (id) => {
       if (window.confirm('Are you sure')) {
@@ -82,36 +67,40 @@ const Employee = () => {
          dataIndex: '_id',
          render: (id, record) => (
             <div className='d-flex'>
-               <EditOutlined
-                  className='mx-2'
-                  onClick={() => {
-                     setEditUser(record);
-                     setModalOpen(true);
-                  }}
-               />
-               <DeleteOutlined onClick={() => deleteHandler(id)} />
+               <Space>
+                  {posUser._id === record._id && (
+                     <EditOutlined
+                        className='text-warning'
+                        onClick={() => {
+                           setEditUser(record);
+                           setModalOpen(true);
+                        }}
+                     />
+                  )}
+                  <DeleteOutlined
+                     className='text-danger'
+                     onClick={() => deleteHandler(id)}
+                  />
+               </Space>
                {id === posUser._id && <></>}
             </div>
          ),
       },
    ];
-   const errorMsg = () => {
-      message.error(error);
-   };
 
    useEffect(() => {
       dispatch(listUsers());
-   }, [dispatch, successDelete, successUpdate]);
+   }, [dispatch, successDelete, successUpdate, successRegister]);
 
    const onFinish = (values) => {
       if (editUser === null) {
          try {
             dispatch(register(values));
-            message.success('Employee created');
+            if (successRegister) message.success('Employee created');
             setModalOpen(false);
-         } catch (error) {
+         } catch (errorRegister) {
             dispatch(loading);
-            message.error(error);
+            message.error(errorRegister);
          }
       } else {
          try {
@@ -130,8 +119,10 @@ const Employee = () => {
    return (
       <DefaultLayout>
          <div className='d-flex justify-content-between'>
-            {loadingUpdate && <Spin tip='...Loading' />}
-            <h3>Employee</h3>
+            {loadingUpdate && <Spin />}
+            {errorUpdate && message.error(errorUpdate)}
+            {errorRegister && message.error(errorRegister)}
+            <h3>พนักงาน</h3>
             <Button type='primary' onClick={() => setModalOpen(true)}>
                {' '}
                Add Employee
@@ -158,8 +149,12 @@ const Employee = () => {
                      <Input />
                   </Form.Item>
 
-                  <Form.Item name='number' label='Phone Number'>
+                  <Form.Item name='password' label='password'>
                      <Input type='password' />
+                  </Form.Item>
+
+                  <Form.Item name='number' label='Phone Number'>
+                     <Input type='number' />
                   </Form.Item>
 
                   <div className='d-flex justify-content-end'>

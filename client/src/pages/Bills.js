@@ -2,61 +2,59 @@ import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import DefaultLayout from '../components/DefaultLayout';
-import { DeleteOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
-import { Button, Table } from 'antd';
+import {
+   EyeOutlined,
+   CheckCircleOutlined,
+   CloseCircleTwoTone,
+} from '@ant-design/icons';
+import { Button, Spin, Table } from 'antd';
 import ReactToPrint, { useReactToPrint } from 'react-to-print';
-import { Modal, message, Form, Input, Select } from 'antd';
+import { Modal, message } from 'antd';
+import {
+   listOrders,
+   updateBillToCheck,
+   updatetBillToCancle,
+} from '../actions/billAction';
+import { Space } from 'antd';
 
 const Bills = () => {
    const componentRef = useRef();
-   const [billsData, setBillsData] = useState([]);
    const [printBillModalOpen, setPrintBillModalOpen] = useState(false);
    const [selectedBill, setSelectedBill] = useState(null);
 
-   const userLogin = useSelector((state) => state.userLogin);
-   const { loading, error, posUser } = userLogin;
+   const orderList = useSelector((state) => state.orderList);
+   const { loading, error, orders } = orderList;
+
+   const billUpdate = useSelector((state) => state.billUpdate);
+   const { success: BillUpdateSuccess } = billUpdate;
 
    const dispatch = useDispatch();
 
-   const getAllBills = async () => {
-      dispatch({ type: 'SHOW_LOADING' });
-      try {
-         const config = {
-            headers: {
-               Authorization: `Bearer ${posUser.token}`,
-            },
-         };
-         const res = await axios.get('/api/bills', config);
+   const updatetBillToCancleP = (record) => {
+      const id = record._id;
+      dispatch(updatetBillToCancle(id));
+      message.warning('ยกเลิกบิล');
+   };
 
-         setBillsData(res.data);
-         dispatch({ type: 'HIDE_LOADING' });
-      } catch (error) {
-         dispatch({ type: 'SHOW_LOADING' });
-         console.log(error);
-      }
+   const updateBillToCheckP = (record) => {
+      const id = record._id;
+      dispatch(updateBillToCheck(id));
+      message.info('จ่ายแล้ว');
    };
 
    const columns = [
-      {
-         title: 'Id',
-         dataIndex: '_id',
-      },
       {
          title: 'พนักงาน',
          dataIndex: 'user',
          render: (user) => <p> {user.name} </p>,
       },
       {
-         title: 'ราคาสินค้า',
-         dataIndex: 'itemsPrice',
+         title: 'ราคาก่อนภาษี',
+         dataIndex: 'subTotal',
       },
       {
          title: 'ภาษี',
          dataIndex: 'taxPrice',
-      },
-      {
-         title: 'ราคาก่อนภาษี',
-         dataIndex: 'subTotal',
       },
       {
          title: 'ราคาสินค้าทั้งหมด',
@@ -67,18 +65,51 @@ const Bills = () => {
          dataIndex: 'paymentMethod',
       },
       {
+         title: 'วันที่',
+         dataIndex: 'createdAt',
+         render: (createdAt) => (
+            <div> {createdAt.toString().substring(0, 10)} </div>
+         ),
+      },
+      {
+         title: 'สถานะ',
+         dataIndex: 'isPaid',
+         render: (isPaid) => (
+            <div>
+               {isPaid ? (
+                  <>
+                     <h5 className='text-info'> จ่ายแล้ว </h5>{' '}
+                  </>
+               ) : (
+                  <>
+                     <h5 className='text-danger'> ยกเลิก</h5>{' '}
+                  </>
+               )}
+            </div>
+         ),
+      },
+      {
          title: 'Actions',
          dataIndex: '_id',
          render: (id, record) => (
             <div className='d-flex'>
-               <EyeOutlined
-                  className='mx-2'
-                  onClick={() => {
-                     console.log(record);
-                     setSelectedBill(record);
-                     setPrintBillModalOpen(true);
-                  }}
-               />
+               <Space>
+                  <EyeOutlined
+                     className='text-success'
+                     onClick={() => {
+                        setSelectedBill(record);
+                        setPrintBillModalOpen(true);
+                     }}
+                  />
+                  <CloseCircleTwoTone
+                     twoToneColor='#fd6159'
+                     onClick={() => updatetBillToCancleP(record)}
+                  />
+                  <CheckCircleOutlined
+                     className='text-info'
+                     onClick={() => updateBillToCheckP(record)}
+                  />
+               </Space>
             </div>
          ),
       },
@@ -126,8 +157,8 @@ const Bills = () => {
    ];
 
    useEffect(() => {
-      getAllBills();
-   }, []);
+      dispatch(listOrders());
+   }, [dispatch, BillUpdateSuccess]);
 
    const handlePrint = useReactToPrint({
       content: () => componentRef.current,
@@ -136,9 +167,15 @@ const Bills = () => {
    return (
       <DefaultLayout>
          <div className='d-flex justify-content-between'>
-            <h3>ITEMS</h3>
+            <h3>รายการขาย</h3>
          </div>
-         <Table columns={columns} dataSource={billsData} bordered />
+         {loading ? (
+            <Spin className='loader' size='large' />
+         ) : error ? (
+            <h1>ไม่มีรายการ</h1>
+         ) : (
+            <Table columns={columns} dataSource={orders} bordered />
+         )}
 
          {printBillModalOpen && (
             <Modal
@@ -180,18 +217,18 @@ const Bills = () => {
                   <br />
                   <div className='dotted-border'>
                      <p>
-                        <b> SUB TOTAL : {selectedBill.subTotal} </b>
+                        <b> ราคาก่อนภาษี : {selectedBill.subTotal} </b>
                      </p>
 
                      <p>
-                        <b> TAX </b> : {selectedBill.taxPrice}{' '}
+                        <b> ภาษี</b> : {selectedBill.taxPrice}{' '}
                      </p>
                      <br />
                   </div>
 
                   <div>
                      <h2>
-                        <b>TOTAL PRICE: </b> {selectedBill.totalPrice}{' '}
+                        <b>ราคาสินค้าทั้งหมด: </b> {selectedBill.totalPrice}{' '}
                      </h2>
                   </div>
 

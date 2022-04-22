@@ -86,15 +86,17 @@ const deleteUser = asyncHandler(async (req, res) => {
 // @access Private/Admin
 const updateUser = asyncHandler(async (req, res) => {
    const values = req.body;
-   const { name, userId, password, number, _id } = values;
+   const { name, userId, number, password } = values;
 
-   const user = await User.findById(req.params.id);
-   console.log(user);
+   const user = await User.findById(req.user._id);
 
    if (user) {
       user.name = name || user.name;
       user.userId = userId || user.userId;
       user.number = number || user.number;
+      if (password) {
+         user.password = password;
+      }
 
       const updatedUser = await user.save();
 

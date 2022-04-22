@@ -69,17 +69,9 @@ const Homepage = () => {
          </div>
 
          {loading ? (
-            <Spin
-               style={{
-                  width: '100px',
-                  height: '100px',
-                  margin: 'auto',
-                  display: 'block',
-               }}
-               size='large'
-            />
+            <Spin className='loader' size='large' />
          ) : error ? (
-            <h1>No product</h1>
+            <h1>ไม่มีสินค้า</h1>
          ) : (
             <Row gutter={20}>
                {products

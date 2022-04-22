@@ -10,9 +10,10 @@ import {
    deleteProduct,
    listProducts,
 } from '../actions/productActions';
+import { Space } from 'antd';
+import { Spin } from 'antd';
 
 const Items = () => {
-   const [itemsData, setItemsData] = useState([]);
    const [addEditModalOpen, setAddEditModalOpen] = useState(false);
    const [editItem, setEditItem] = useState(null);
 
@@ -22,9 +23,12 @@ const Items = () => {
    const productList = useSelector((state) => state.productList);
    const { loading, error, products } = productList;
 
+   const productDelete = useSelector((state) => state.productDelete);
+   const { success: productDeleteSuccess } = productDelete;
+
    const dispatch = useDispatch();
 
-   const deleteItem = async (record) => {
+   const deleteItem = (record) => {
       if (window.confirm('Are you sure')) {
          const itemId = record._id;
          dispatch(deleteProduct(itemId));
@@ -67,17 +71,19 @@ const Items = () => {
          dataIndex: '_id',
          render: (id, record) => (
             <div className='d-flex'>
-               <EditOutlined
-                  className='mx-2'
-                  onClick={() => {
-                     setEditItem(record);
-                     setAddEditModalOpen(true);
-                  }}
-               />
-               <DeleteOutlined
-                  className='mx-2'
-                  onClick={() => deleteItem(record)}
-               />
+               <Space>
+                  <EditOutlined
+                     className='text-warning'
+                     onClick={() => {
+                        setEditItem(record);
+                        setAddEditModalOpen(true);
+                     }}
+                  />
+                  <DeleteOutlined
+                     className='text-danger'
+                     onClick={() => deleteItem(record)}
+                  />
+               </Space>
             </div>
          ),
       },
@@ -85,21 +91,15 @@ const Items = () => {
 
    useEffect(() => {
       dispatch(listProducts());
-   }, [dispatch]);
+   }, [dispatch, productDeleteSuccess]);
 
    const onFinish = async (values) => {
       dispatch({ type: 'SHOW_LOADING' });
       if (editItem === null) {
          try {
             dispatch(createProduct(values));
-            // await axios.post('/api/products', values, {
-            //    headers: { Authorization: `Bearer ${posUser.token}` },
-            // });
-            // dispatch({ type: 'HIDE_LOADING' });
-
             message.success('Item Add Successfully');
             setAddEditModalOpen(false);
-            // getAllItems();
          } catch (error) {
             dispatch({ type: 'SHOW_LOADING' });
             message.error('Err Add Item');
@@ -122,7 +122,6 @@ const Items = () => {
             message.success('Edit Item Successfully');
             setEditItem(null);
             setAddEditModalOpen(false);
-            // getAllItems();
          } catch (error) {
             dispatch({ type: 'SHOW_LOADING' });
             message.error('Err Edit Item');
@@ -134,13 +133,19 @@ const Items = () => {
    return (
       <DefaultLayout>
          <div className='d-flex justify-content-between'>
-            <h3>ITEMS</h3>
+            <h3>รายการสินค้า</h3>
             <Button type='primary' onClick={() => setAddEditModalOpen(true)}>
                {' '}
                Add Item
             </Button>
          </div>
-         <Table columns={columns} dataSource={products} bordered />
+         {loading ? (
+            <Spin className='loader' size='large' />
+         ) : error ? (
+            <h1>ไม่มีสิค้า</h1>
+         ) : (
+            <Table columns={columns} dataSource={products} bordered />
+         )}
 
          {addEditModalOpen && (
             <Modal

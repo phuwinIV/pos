@@ -80,6 +80,8 @@ export const deleteProduct = (itemId) => async (dispatch, getState) => {
          },
       };
 
+      console.log(posUser);
+
       await axios.delete(`/api/products/${itemId}`, config);
       dispatch({
          type: PRODUCT_DELETE_SUCCESS,

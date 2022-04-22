@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import morgan from 'morgan';
@@ -12,18 +13,15 @@ connectDB();
 const app = express();
 app.use(express.json());
 
-if (process.env.NODE_ENV === 'development') {
-   app.use(morgan('dev'));
-}
-
 app.use('/api/users', userRoute);
 app.use('/api/bills', billsRoute);
 app.use('/api/products', productRoute);
 
-app.use(notFound);
+if (process.env.NODE_ENV === 'development') {
+   app.use(morgan('dev'));
+}
 
-app.use(errorHandler);
-
+const __dirname = path.resolve();
 if (process.env.NODE_ENV === 'production') {
    app.use(express.static(path.join(__dirname, '/client/build')));
 
@@ -35,6 +33,9 @@ if (process.env.NODE_ENV === 'production') {
       res.send('API is running....');
    });
 }
+
+app.use(notFound);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 

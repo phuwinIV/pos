@@ -14,26 +14,59 @@ const addOrderItems = asyncHandler(async (req, res) => {
       subTotal,
    } = req.body;
 
-   if(paymentMethod)
+   if (paymentMethod)
+      if (orderItems && orderItems.length === 0) {
+         res.status(400);
+         throw new Error('No order items');
+         return;
+      } else {
+         const bills = new Bills({
+            orderItems,
+            user: req.user._id,
+            paymentMethod,
+            itemsPrice,
+            taxPrice,
+            totalPrice,
+            subTotal,
+            isPaid: true,
+         });
 
-   if (orderItems && orderItems.length === 0) {
-      res.status(400);
-      throw new Error('No order items');
-      return;
-   } else {
-      const bills = new Bills({
-         orderItems,
-         user: req.user._id,
-         paymentMethod,
-         itemsPrice,
-         taxPrice,
-         totalPrice,
-         subTotal,
-      });
+         const createBills = await bills.save();
 
-      const createBills = await bills.save();
+         res.status(201).json(createBills);
+      }
+});
 
-      res.status(201).json(createBills);
+// @desc Update a product
+// @route PUT /api/products/:id
+// @access Private/Admin
+const updateBill = asyncHandler(async (req, res) => {
+   try {
+      const bill = await Bills.findByIdAndUpdate(req.params.id);
+
+      if (bill) {
+         bill.isPaid = false;
+      }
+      await bill.save();
+
+      res.status(200).send('Bill updated');
+   } catch (error) {
+      res.status(400).json(error);
+   }
+});
+
+const updateBillToCheck = asyncHandler(async (req, res) => {
+   try {
+      const bill = await Bills.findByIdAndUpdate(req.params.id);
+
+      if (bill) {
+         bill.isPaid = true;
+      }
+      await bill.save();
+
+      res.status(200).send('Bill updated');
+   } catch (error) {
+      res.status(400).json(error);
    }
 });
 
@@ -45,4 +78,4 @@ const getOrders = asyncHandler(async (req, res) => {
    res.json(bills);
 });
 
-export { addOrderItems, getOrders };
+export { addOrderItems, getOrders, updateBill, updateBillToCheck };

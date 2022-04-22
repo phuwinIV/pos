@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import '../resourses/authentication.css';
-import { Form, Input, Button, Row, Col } from 'antd';
+import { Form, Input, Button, Row, Col, Spin, message } from 'antd';
+import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { message } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import { login } from '../actions/userActions';
+import '../resourses/items.css';
 
 const Login = () => {
    const dispatch = useDispatch();
@@ -40,6 +40,7 @@ const Login = () => {
    return (
       <div className='authentication'>
          {error && errorMsg()}
+         {loading && <Spin className='loader'></Spin>}
          <Row>
             <Col lg={8} xs={22}>
                <Form layout='vertical' onFinish={onFinish}>
@@ -51,19 +52,21 @@ const Login = () => {
                   <h3>Login</h3>
 
                   <Form.Item name='userId' label='User ID'>
-                     <Input />
+                     <Input status={error && 'error'} />
                   </Form.Item>
 
                   <Form.Item name='password' label='Password'>
-                     <Input type='password' />
+                     <Input.Password
+                        iconRender={(visible) =>
+                           visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+                        }
+                        status={error && 'error'}
+                     />
                   </Form.Item>
 
-                  <div className='d-flex justify-content-between align-items-center'>
-                     <Link to='/register'>not Registed ? Here to register</Link>
-                     <Button htmlType='submit' type='primary'>
-                        Login
-                     </Button>
-                  </div>
+                  <Button htmlType='submit' type='primary' block>
+                     Login
+                  </Button>
                </Form>
             </Col>
          </Row>

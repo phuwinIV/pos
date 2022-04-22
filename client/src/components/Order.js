@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, List } from 'antd';
+import { Button, List, Avatar, Modal, Tabs } from 'antd';
 import {
    DeleteOutlined,
    PlusCircleOutlined,
@@ -8,21 +8,29 @@ import {
 import '../resourses/layout.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeFromCart } from '../actions/cartAction';
-import { Avatar, Modal } from 'antd';
 import { createOrder } from '../actions/billAction';
-import { Select } from 'antd';
 
 import { message } from 'antd';
 import { BILL_CREATE_RESET } from '../constans/billConstans';
-import { Radio } from 'antd';
+import { Form } from 'antd';
+import { Input } from 'antd';
+import QRcode from 'qrcode.react';
+import generatePayload from 'promptpay-qr';
+import { Typography } from 'antd';
 
-const { Option } = Select;
+const { TabPane } = Tabs;
 
 const Order = () => {
    const [subTotal, setSubtotal] = useState(0);
-   const [payment, SetPayment] = useState('Cash');
-   const [quantity, setQty] = useState(1);
+   const [payment, SetPayment] = useState('');
+
    const [modalOpen, setModalOpen] = useState(false);
+   const [getMoney, setGetMoney] = useState(0);
+   const [moneyChange, setMoneyChange] = useState(0);
+
+   const [phoneNumber, setPhoneNumber] = useState('0956615016');
+   const [amount, setAmount] = useState(1.0);
+   const [qrCode, setqrCode] = useState('');
 
    const dispatch = useDispatch();
 
@@ -78,15 +86,21 @@ const Order = () => {
          temp = temp + item.price * item.quantity;
       });
 
-      setSubtotal(temp);
-   }, [cartItems]);
+      let mc = 0;
 
-   const PaymentHandle = (value) => {
-      SetPayment(value);
-      console.log(payment);
-      if (payment === 'promtpay') {
-         setModalOpen(true);
-      }
+      mc = getMoney - cartItems.totalPrice;
+
+      setMoneyChange(Number(mc));
+
+      setSubtotal(temp);
+   }, [cartItems, getMoney]);
+
+   const handlePhoneNumber = (e) => {
+      setPhoneNumber(e.target.value);
+   };
+
+   const handleQR = () => {
+      setqrCode(generatePayload(phoneNumber, { amount }));
    };
 
    const orderCreateHandle = () => {
@@ -100,7 +114,17 @@ const Order = () => {
             totalPrice: cartItems.totalPrice,
          })
       );
+      setModalOpen(false);
    };
+
+   const orderPrepare = () => {
+      SetPayment('Cash');
+      console.log(payment);
+      setModalOpen(true);
+      setAmount(parseFloat(cartItems.totalPrice));
+      handleQR();
+   };
+
    useEffect(() => {
       if (success) {
          dispatch({ type: BILL_CREATE_RESET });
@@ -114,13 +138,13 @@ const Order = () => {
             header={
                <>
                   <div className='d-flex  justify-content-between'>
-                     <h4>ราคาก่อนลด</h4>
+                     <h4>ราคารวมสุทธิ</h4>
                      <h3>
-                        Total :<b>{Number(subTotal).toFixed(2)}</b>
+                        <b>{Number(subTotal).toFixed(2)}</b>
                      </h3>
                   </div>
                   <div className='d-flex'>
-                     <Button type='primary' onClick={orderCreateHandle} block>
+                     <Button type='primary' onClick={orderPrepare} block>
                         ชำระเงิน
                      </Button>
                   </div>
@@ -134,7 +158,9 @@ const Order = () => {
                   <List.Item.Meta
                      onClick={() => setModalOpen(true)}
                      style={{ cursor: 'pointer' }}
-                     avatar={<Avatar src={item.image} />}
+                     avatar={
+                        <Avatar size={54} shape='square' src={item.image} />
+                     }
                      title={item.name}
                      description={
                         <>
@@ -170,7 +196,84 @@ const Order = () => {
             onCancel={() => {
                setModalOpen(false);
             }}>
-            555
+            <div>
+               <Tabs
+                  onTabClick={(key) => {
+                     if (key === '1') {
+                        SetPayment('Cash');
+                        console.log(payment);
+                     } else {
+                        SetPayment('Promtpay');
+                        console.log(payment);
+                     }
+                  }}
+                  defaultActiveKey='1'
+                  type='card'>
+                  <TabPane tab='เงินสด' key='1'>
+                     <div>
+                        <Form.Item name='getMoney' label='THB'>
+                           <Input
+                              onChange={(e) => setGetMoney(e.target.value)}
+                           />
+                        </Form.Item>
+                        <div className='d-flex  justify-content-between'>
+                           <h4>เงินสด</h4>
+                           <h3> {getMoney} </h3>
+                        </div>
+                        <div className='d-flex  justify-content-between'>
+                           <h4>รวมสุทธิ</h4>
+                           <h3>{Number(subTotal).toFixed(2)}</h3>
+                        </div>
+                        <div className='d-flex justify-content-between'>
+                           <h4> เงินทอน</h4>
+                           <h3>{moneyChange}</h3>
+                        </div>
+                        <Button
+                           type='primary'
+                           onClick={() => {
+                              orderCreateHandle();
+                              SetPayment('Cash');
+                           }}
+                           block>
+                           ยืนยันการชำระ
+                        </Button>
+                     </div>
+                  </TabPane>
+                  <TabPane tab='พร้อมเพย์' key='2'>
+                     <div>
+                        <h3
+                           className='text-center'
+                           style={{ backgroundColor: 'skyblue' }}>
+                           {' '}
+                           THAI QR PAYMENT{' '}
+                        </h3>
+                        <Button onClick={handleQR}> QR CODE </Button>
+                        <br />
+                        <div className='text-center'>
+                           {' '}
+                           <QRcode
+                              style={{ width: '200px', height: 'auto' }}
+                              value={qrCode}
+                           />
+                           <br />
+                           <Typography.Title level={2}>
+                              ชื่อบัญชี xxx
+                           </Typography.Title>
+                           <p className='text-lead'> {cartItems.totalPrice} </p>
+                        </div>
+                        <Button
+                           type='primary'
+                           onClick={() => {
+                              orderCreateHandle();
+                              SetPayment('Promtpay');
+                           }}
+                           block>
+                           ยืนยันการชำระ
+                        </Button>
+                     </div>
+                  </TabPane>
+               </Tabs>
+            </div>
          </Modal>
       </>
    );
