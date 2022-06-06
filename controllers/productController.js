@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 // @route GET /api/products
 // @access Public
 const getProducts = asyncHandler(async (req, res) => {
-   const products = await await Product.find().sort({ category: 1 });
+   const products =  await Product.find().sort({ category: 1 });
    res.status(200).send(products);
 });
 
